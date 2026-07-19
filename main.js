@@ -30,6 +30,8 @@ const authenticateToken = (req, res, next) => {
     // Extract token
     const token = authHeader.split(' ')[1];
 
+    // "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJhZG1pbiIsImlhdCI6MTc4NDQ0MzM5OCwiZXhwIjoxNzg0NDUwNTk4fQ.AUoA45SJQZ3OYc3OiUSJtdDdOXW7qAEjHThgZ2Wuff8"
+
     // Verify token
     jwt.verify(token, JWT_SECRET, (err, decoded) => {
       if (err) {

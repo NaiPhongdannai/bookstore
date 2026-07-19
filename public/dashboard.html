@@ -158,14 +158,33 @@
     </div>
 
     <script>
-      add_books = (event) => {
+      add_books = async (event) => {
         event.preventDefault();
         const title = document.querySelector("#title").value;
         const author = document.querySelector("#author").value;
         const published_year = document.querySelector("#published_year").value;
         const price = document.querySelector("#price").value;
+
         
-        
+         try {
+           const token = localStorage.getItem('token');
+           const res = await fetch(`http://localhost:3000/api/book`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+             },
+            body: JSON.stringify({ title, author, published_year, price })
+          });
+
+          const data = await res.json();
+          alert("เพิ่มหนังสือสำเร็จ");
+          // alert(data.messsage);
+        } catch (error) {
+          console.log(error);
+          alert("เกิดข้อผิดพลาด");
+          
+        }
       };
       main = () => {
         const token = localStorage.getItem("token");
