@@ -84,6 +84,25 @@ app.post("/api/login", async (req, res) => {
 
 });
 
+app.post("/api/book",authenticateToken, async (req, res) =>{
+  const {title, author, published_year, price} = req.body;
+  try {
+    const [data] = await db.query(`INSERT INTO books 
+      (title, author, published_year, price) 
+      VALUES (?, ?, ?, ?)`, [title, author, published_year,price]);
+      res.status(201).json({
+        success : true,
+        messsage: "เพิ่มหนังสือสำเร็จ"
+      })
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success : false,
+      message : "เพิ่มหนังสือไม่สำเร็จ"
+    })
+  }
+})
+
 app.listen(process.env.PORT, () => {
   console.log("Server ทำงานที่ http://localhost:"+process.env.PORT); 
 });
