@@ -19,7 +19,7 @@
   <body>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#">ระบบคลังหนังสือ</a>
+        <a class="navbar-brand" href="#">BookStore</a>
         <button
           class="navbar-toggler"
           type="button"
@@ -54,6 +54,42 @@
           >
             เพิ่มหนังสือ
           </button>
+        </div>
+
+        <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <form id="edit-book-form" onsubmit="saveEditBook(event)">
+                <div class="modal-header">
+                  <h1 class="modal-title fs-5" id="editModalLabel">แก้ไขหนังสือ</h1>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                  <input type="hidden" id="edit-id" />
+                  <div class="mb-3">
+                    <label for="edit-title" class="form-label">ชื่อหนังสือ</label>
+                    <input type="text" class="form-control" id="edit-title" required />
+                  </div>
+                  <div class="mb-3">
+                    <label for="edit-author" class="form-label">ผู้แต่ง</label>
+                    <input type="text" class="form-control" id="edit-author" required />
+                  </div>
+                  <div class="mb-3">
+                    <label for="edit-published-year" class="form-label">ปีที่พิมพ์</label>
+                    <input type="number" class="form-control" id="edit-published-year" required />
+                  </div>
+                  <div class="mb-3">
+                    <label for="edit-price" class="form-label">ราคา</label>
+                    <input type="number" class="form-control" id="edit-price" required />
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                  <button type="submit" class="btn btn-primary">บันทึก</button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
 
         <div
@@ -140,16 +176,15 @@
               <tr>
                 <th scope="col"># ID</th>
                 <th scope="col">ชื่อหนังสือ</th>
+                <th scope="col">ผู้แต่ง</th>
                 <th scope="col">ปีที่พิมพ์</th>
                 <th scope="col">ราคา</th>
+                <th scope="col">จัดการ</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="book-list">
               <tr>
-                <th scope="row">1</th>
-                <td>Mark</td>
-                <td>Otto</td>
-                <td>@mdo</td>
+                <td colspan="6" class="text-center text-muted">กำลังโหลดข้อมูล...</td>
               </tr>
             </tbody>
           </table>
@@ -158,6 +193,129 @@
     </div>
 
     <script>
+      const renderBooks = (books) => {
+        const tbody = document.querySelector("#book-list");
+        tbody.innerHTML = "";
+
+        if (!books.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">ยังไม่มีข้อมูลหนังสือ</td></tr>';
+          return;
+        }
+
+        books.forEach((book) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <th scope="row">${book.id}</th>
+            <td>${book.title}</td>
+            <td>${book.author}</td>
+            <td>${book.published_year}</td>
+            <td>${Number(book.price).toFixed(2)}</td>
+            <td>
+              <button class="btn btn-sm btn-warning me-2" onclick="openEditModal(${JSON.stringify(book)})">แก้ไข</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteBook(${book.id})">ลบ</button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      };
+
+      const loadBooks = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          if (!token) {
+            window.location.href = "./";
+            return;
+          }
+
+          const res = await fetch("http://localhost:3000/api/books", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.message || "โหลดข้อมูลไม่สำเร็จ");
+          }
+
+          renderBooks(data.books || []);
+        } catch (error) {
+          console.error(error);
+          document.querySelector("#book-list").innerHTML = '<tr><td colspan="6" class="text-center text-danger">โหลดข้อมูลไม่สำเร็จ</td></tr>';
+        }
+      };
+
+      openEditModal = (book) => {
+        document.querySelector("#edit-id").value = book.id;
+        document.querySelector("#edit-title").value = book.title;
+        document.querySelector("#edit-author").value = book.author;
+        document.querySelector("#edit-published-year").value = book.published_year;
+        document.querySelector("#edit-price").value = book.price;
+
+        const modal = new bootstrap.Modal(document.getElementById("editModal"));
+        modal.show();
+      };
+
+      saveEditBook = async (event) => {
+        event.preventDefault();
+        const id = document.querySelector("#edit-id").value;
+        const title = document.querySelector("#edit-title").value;
+        const author = document.querySelector("#edit-author").value;
+        const published_year = document.querySelector("#edit-published-year").value;
+        const price = document.querySelector("#edit-price").value;
+
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch(`http://localhost:3000/api/book/${id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ title, author, published_year, price }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.message || "แก้ไขหนังสือไม่สำเร็จ");
+          }
+
+          alert(data.message || "แก้ไขหนังสือสำเร็จ");
+          bootstrap.Modal.getInstance(document.getElementById("editModal")).hide();
+          await loadBooks();
+        } catch (error) {
+          console.error(error);
+          alert(error.message || "เกิดข้อผิดพลาด");
+        }
+      };
+
+      deleteBook = async (id) => {
+        if (!confirm("คุณต้องการลบหนังสือรายการนี้ใช่ไหม")) {
+          return;
+        }
+
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch(`http://localhost:3000/api/book/${id}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.message || "ลบหนังสือไม่สำเร็จ");
+          }
+
+          alert(data.message || "ลบหนังสือสำเร็จ");
+          await loadBooks();
+        } catch (error) {
+          console.error(error);
+          alert(error.message || "เกิดข้อผิดพลาด");
+        }
+      };
+
       add_books = async (event) => {
         event.preventDefault();
         const title = document.querySelector("#title").value;
@@ -165,34 +323,40 @@
         const published_year = document.querySelector("#published_year").value;
         const price = document.querySelector("#price").value;
 
-        
-         try {
-           const token = localStorage.getItem('token');
-           const res = await fetch(`http://localhost:3000/api/book`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-             },
-            body: JSON.stringify({ title, author, published_year, price })
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch("http://localhost:3000/api/book", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ title, author, published_year, price }),
           });
 
           const data = await res.json();
-          alert("เพิ่มหนังสือสำเร็จ");
-          // alert(data.messsage);
+          if (!res.ok) {
+            throw new Error(data.message || "เพิ่มหนังสือไม่สำเร็จ");
+          }
+
+          alert(data.message || "เพิ่มหนังสือสำเร็จ");
+          document.querySelector("form").reset();
+          bootstrap.Modal.getInstance(document.getElementById("exampleModal")).hide();
+          await loadBooks();
         } catch (error) {
           console.log(error);
-          alert("เกิดข้อผิดพลาด");
-          
+          alert(error.message || "เกิดข้อผิดพลาด");
         }
       };
-      main = () => {
+
+      main = async () => {
         const token = localStorage.getItem("token");
         if (!token) {
-          // htdocs/books
-          // http://localhost/
           window.location.href = "./";
+          return;
         }
+
+        await loadBooks();
       };
 
       logout = () => {

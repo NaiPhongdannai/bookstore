@@ -7,7 +7,8 @@ import cors from 'cors';
 
 dotenv.config();
 
-const JWT_SECRET = process.env.SECRET_KEY
+const JWT_SECRET = process.env.SECRET_KEY || process.env.SECRET_Key || 'secret_key_2026';
+const PORT = process.env.PORT || 3000;
 
 const app = express(); 
 app.use(express.json()); 
@@ -75,7 +76,7 @@ app.post("/api/login", async (req, res) => {
 
   const token = jwt.sign(
     payload,
-    process.env.SECRET_KEY,
+    JWT_SECRET,
     { expiresIn: '2h' } 
   );
 
@@ -86,15 +87,34 @@ app.post("/api/login", async (req, res) => {
 
 });
 
-app.post("/api/book",authenticateToken, async (req, res) =>{
+app.get("/api/books", authenticateToken, async (req, res) => {
+  try {
+    const [books] = await db.query(
+      "SELECT id, title, author, published_year, price FROM books ORDER BY id ASC"
+    );
+
+    res.json({
+      success: true,
+      books
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "โหลดข้อมูลหนังสือไม่สำเร็จ"
+    });
+  }
+});
+
+app.post("/api/book", authenticateToken, async (req, res) =>{
   const {title, author, published_year, price} = req.body;
   try {
-    const [data] = await db.query(`INSERT INTO books 
+    await db.query(`INSERT INTO books 
       (title, author, published_year, price) 
-      VALUES (?, ?, ?, ?)`, [title, author, published_year,price]);
+      VALUES (?, ?, ?, ?)`, [title, author, published_year, price]);
       res.status(201).json({
         success : true,
-        messsage: "เพิ่มหนังสือสำเร็จ"
+        message: "เพิ่มหนังสือสำเร็จ"
       })
   } catch (error) {
     console.log(error);
@@ -105,6 +125,44 @@ app.post("/api/book",authenticateToken, async (req, res) =>{
   }
 })
 
-app.listen(process.env.PORT, () => {
-  console.log("Server ทำงานที่ http://localhost:"+process.env.PORT); 
+app.put("/api/book/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { title, author, published_year, price } = req.body;
+
+  try {
+    const [result] = await db.query(
+      "UPDATE books SET title = ?, author = ?, published_year = ?, price = ? WHERE id = ?",
+      [title, author, published_year, price, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "ไม่พบหนังสือที่ต้องการแก้ไข" });
+    }
+
+    res.json({ success: true, message: "แก้ไขหนังสือสำเร็จ" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "แก้ไขหนังสือไม่สำเร็จ" });
+  }
+});
+
+app.delete("/api/book/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const [result] = await db.query("DELETE FROM books WHERE id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: "ไม่พบหนังสือที่ต้องการลบ" });
+    }
+
+    res.json({ success: true, message: "ลบหนังสือสำเร็จ" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "ลบหนังสือไม่สำเร็จ" });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log("Server ทำงานที่ http://localhost:" + PORT); 
 });
