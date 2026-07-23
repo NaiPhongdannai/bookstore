@@ -6,10 +6,10 @@ dotenv.config();
 
 // Create connection pool
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'mysql-1b83004f-book-1.f.aivencloud.com',
-  user: process.env.DB_USER || 'avnadmin',
-  password: process.env.DB_PASSWORD || 'AVNS_9NBnxqCeQhXTjr4i941',
-  database: process.env.DB_NAME || 'defaultdb',
+  host: process.env.DB_HOST || 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
+  user: process.env.DB_USER || '4H4B6FEz3WPrVQT.root',
+  password: process.env.DB_PASSWORD || 'wWEvmvEoC9yVUPmt',
+  database: process.env.DB_NAME || 'test',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -18,7 +18,7 @@ const pool = mysql.createPool({
 // Test connection
 try {
   const connection = await pool.getConnection();
-  console.log('Successfully connected to MySQL database: ' + (process.env.DB_NAME || 'defaultdb'));
+  console.log('Successfully connected to MySQL database: ' + (process.env.DB_NAME || 'test'));
   connection.release();
 } catch (error) {
   console.error('Database connection failed! Error details:', error.message);
