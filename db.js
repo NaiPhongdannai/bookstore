@@ -18,7 +18,7 @@ const pool = mysql.createPool({
 // Test connection
 try {
   const connection = await pool.getConnection();
-  console.log('Successfully connected to MySQL database: ' + (process.env.DB_NAME || 'bookstore_db'));
+  console.log('Successfully connected to MySQL database: ' + (process.env.DB_NAME || 'defaultdb'));
   connection.release();
 } catch (error) {
   console.error('Database connection failed! Error details:', error.message);
